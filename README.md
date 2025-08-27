@@ -43,39 +43,17 @@ Follow these steps to clone all repositories from a GitHub organization:
     ```bash
     make run_bash
     ```
+    __OR__
   - Python version (uses the virtual environment):
     ```bash
     make run_py
     ```
----
-### Windows Instructions
-
-  For Windows users:
-
-  1. Install [Git for Windows](https://gitforwindows.org/) and [jq for Windows](https://stedolan.github.io/jq/download/).
-  2. Open Command Prompt and navigate to the project folder.
-  3. (Optional) Edit `config.env` to set your organization and token.
-  4. Run (choose one):
-    - To use Makefile:
-      ```cmd
-      make run_bat
-      ```
-    - Or run the batch script directly:
-      ```cmd
-      clone_org_repos.bat <organization_name>
-      ```
 
 ---
 **Find your cloned repositories:**
   - All repositories will be in a folder named `<organization_name>_<YYYYMMDD_HHMMSS>`.
 
-
-For custom organization names without using config, you can run:
-```bash
-python3 clone_org_repos.py <organization_name>
-./clone_org_repos.bash <organization_name>
-```
-
+---
 ## Customizations Guide
 
 ### Configuration File
