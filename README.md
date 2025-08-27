@@ -69,26 +69,13 @@ API_URL=https://api.github.com/orgs
 # Optional: GitHub token for private repos and higher API rate limits
 GITHUB_TOKEN=your_token_here
 ```
-
-
+#### Configuration Variables
 - `ORG_NAME`: The default GitHub organization to clone from. If not set, defaults to `DeltaE`.
 - `API_URL`: The base API URL for GitHub. Usually does not need to be changed.
 - `GITHUB_TOKEN`: (Optional) GitHub token for authenticating API requests. Set this to access private repositories and increase API rate limits. If not set, only public repositories are accessible and rate limits are lower.
+  > [How to manage your github tokens?](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens)
 
 __Note__: If you provide an organization name as a command-line argument, it will override the value in `config.env`.
-
-### Configuration Variables
-
-| Variable         | Description                                                                 |
-|------------------|-----------------------------------------------------------------------------|
-| `ORG_NAME`       | The GitHub organization to clone from. Defaults to `DeltaE` if not set.     |
-| `API_URL`        | The base API URL for GitHub. Usually does not need to be changed.           |
-| `GITHUB_TOKEN`   | (Optional) GitHub token for private repos and higher API rate limits.       |
-
-If `GITHUB_TOKEN` is set, the script will use it to authenticate API requests, allowing access to private repositories and increasing the rate limit for cloning large organizations.
-
-
-
 
 
 ## Usage
