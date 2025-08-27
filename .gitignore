@@ -1,5 +1,6 @@
 .venv
 .vscode
 .github
+cloned_repos/*
 
 

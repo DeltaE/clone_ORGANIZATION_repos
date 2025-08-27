@@ -82,14 +82,14 @@ def clone_repositories(repos, master_folder):
 def main():
     org_name = sys.argv[1] if len(sys.argv) > 1 else "DeltaE"
     token = os.getenv('GITHUB_TOKEN')
-    
-    # Create timestamped master folder
+
+    # Use MASTER_FOLDER from environment/config, default to 'cloned_repos'
+    master_folder_base = os.getenv('MASTER_FOLDER', 'cloned_repos')
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    master_folder = Path(f"{org_name}_{timestamp}")
+    master_folder = Path(f"{master_folder_base}_{timestamp}")
     master_folder.mkdir(exist_ok=True)
-    
     print(f"📁 Created master folder: {master_folder}")
-    
+
     # Get and clone repositories
     repos = get_repositories(org_name, token)
     if repos:

@@ -18,9 +18,15 @@ fi
 ORG_NAME="${1:-$ORG_NAME}"
 GITHUB_TOKEN="${GITHUB_TOKEN:-}"
 
-# Create timestamped master folder
+echo "📁 Creating master folder: $MASTER_FOLDER"
+
+echo "📁 Creating master folder: $MASTER_FOLDER"
+
+# Set master folder name from config or default
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
-MASTER_FOLDER="${ORG_NAME}_${TIMESTAMP}"
+MASTER_FOLDER_BASE="${MASTER_FOLDER:-cloned_repos}"
+ORG_FOLDER="${ORG_NAME}_${TIMESTAMP}"
+MASTER_FOLDER="$MASTER_FOLDER_BASE/$ORG_FOLDER"
 
 echo "📁 Creating master folder: $MASTER_FOLDER"
 mkdir -p "$MASTER_FOLDER"

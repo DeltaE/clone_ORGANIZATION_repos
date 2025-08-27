@@ -3,9 +3,9 @@
 
  # Clone Organization repos
 
-This repository provides scripts to efficiently clone all repositories from a GitHub organization. Both Bash and Python scripts are included for flexibility. At successful run of the script you will get as __new Directory with the Organization name__ (as defined in config) with a cloning instance's __datetime stamp__. Use the [config file](https://github.com/DeltaE/clone_ORGANIZATION_repos/blob/main/config.env) to set your __GITHUB_TOKEN__ to access private clones from the organization.
+This repository provides scripts to efficiently clone all repositories from a GitHub organization. Both Bash and Python scripts are included for flexibility. At successful run of the script you will get the cloned repositories inside 'clones_repos' (can be set via config) . Use the [config file](https://github.com/DeltaE/clone_ORGANIZATION_repos/blob/main/config.env) to set your __GITHUB_TOKEN__ to access private clones from the organization.
 
-> Curent setup is designed for Linux (or WSL2)/MACOs. Windows setup will be coming soon...
+> Current setup is designed for Linux (or WSL2)/MACOs. Windows setup will be coming soon...
 
 ## Quick Start
 
@@ -52,8 +52,11 @@ Follow these steps to clone all repositories from a GitHub organization:
     ```
 
 ---
+
 **Find your cloned repositories:**
-  - All repositories will be in a folder named `<organization_name>_<YYYYMMDD_HHMMSS>`.
+  - All repositories will be inside the folder defined by `MASTER_FOLDER` (default: `cloned_repos`).
+  - Each cloning run creates a subfolder named `<ORG_NAME>_<YYYYMMDD_HHMMSS>` inside `MASTER_FOLDER`.
+  - Example: `cloned_repos/DeltaE_20250827_143000/`
 
 ---
 ## Customizations Guide
@@ -121,24 +124,20 @@ If `GITHUB_TOKEN` is set, the script will use it to authenticate API requests, a
 - `requirements.txt`: Python dependencies for the script.
 
 
-
-
-
 ## Folder Naming Convention
+- All the cloned repos will be stored at 'cloned_repos' (default, but configurable name at 'config.env' file)
 
-When cloning, both scripts create a master folder named:
+- When cloning, both scripts create cloned repos under sub-directories inside 'cloned_repos' named as :
 
-```
-<organization_name>_<YYYYMMDD_HHMMSS>
-```
+  ```
+  <organization_name>_<YYYYMMDD_HHMMSS>
+  ```
 
-For example, cloning the organization `DeltaE` on August 27, 2025 at 14:30:00 will create:
+  For example, cloning the organization `DeltaE` on August 27, 2025 at 14:30:00 will create:
 
-```
-DeltaE_20250827_143000/
-```
-
-All repositories will be cloned inside this folder.
+  ```
+  DeltaE_20250827_143000/
+  ```
 
 ## Notes
 
