@@ -3,9 +3,11 @@
 
  # Clone Organization repos
 
-This repository provides scripts to efficiently clone all repositories from a GitHub organization. Both Bash and Python scripts are included for flexibility. At successful run of the script you will get the cloned repositories inside '__cloned_repos__' (configurable folder name) . Use the [config file](https://github.com/DeltaE/clone_ORGANIZATION_repos/blob/main/config.env) to set your __GITHUB_TOKEN__ to access private clones from the organization.
+This repository provides scripts to efficiently clone all repositories from a GitHub organization. Both Bash and Python scripts are included for flexibility. At successful run of the script you will get the cloned repositories inside '__cloned_repos__' (configurable folder name). Use the [config file](https://github.com/DeltaE/clone_ORGANIZATION_repos/blob/main/config.env) to set your __GITHUB_TOKEN__ to access private clones from the organization.
 
-> Current setup is designed for Linux (or WSL2)/MACOs. Windows setup will be coming soon...
+> 🆕 **If the cloned repo exists, 🔄 it will sync the repos with the latest available version.**
+
+NOTE: Current setup is designed for Linux (or WSL2)/MACOs. Windows setup will be coming soon...
 
 ## Quick Start
 
@@ -41,6 +43,8 @@ Follow these steps to clone all repositories from a GitHub organization:
   ```
 
 6. **Run the cloning script:**
+  - The script will automatically clone new repositories or sync existing ones if the organization folder already exists
+  - A detailed summary report (`clone_summary.txt`) is generated with operation history and results
   - Bash version:
     ```bash
     make run_bash
@@ -55,8 +59,9 @@ Follow these steps to clone all repositories from a GitHub organization:
 
 **Find your cloned repositories:**
   - All repositories will be inside the folder defined by `MASTER_FOLDER` (default: `cloned_repos`).
-  - Each cloning run creates a subfolder named `<ORG_NAME>_<YYYYMMDD_HHMMSS>` inside `MASTER_FOLDER`.
-  - Example: `cloned_repos/DeltaE_20250827_143000/`
+  - Repositories are organized by organization: `<MASTER_FOLDER>/<ORG_NAME>/`
+  - Example: `cloned_repos/DeltaE/`
+  - A `clone_summary.txt` file tracks all clone/sync operations with timestamps and results.
 
 ---
 ## Customizations Guide
@@ -73,8 +78,10 @@ API_URL=https://api.github.com/orgs
 GITHUB_TOKEN=your_token_here
 ```
 #### Configuration Variables
+
 - `ORG_NAME`: The default GitHub organization to clone from. If not set, defaults to `DeltaE`.
 - `API_URL`: The base API URL for GitHub. Usually does not need to be changed.
+- `MASTER_FOLDER`: The base folder where all cloned repositories will be stored. Defaults to `cloned_repos`.
 - `GITHUB_TOKEN`: (Optional) GitHub token for authenticating API requests. Set this to access private repositories and increase API rate limits. If not set, only public repositories are accessible and rate limits are lower.
   > [How to manage your github tokens?](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens)
 
@@ -87,12 +94,14 @@ __Note__: If you provide an organization name as a command-line argument, it wil
 ### Cloning Scripts (Choose one based on your OS)
 
 #### Linux/macOS
+> 🆕 **If the cloned repo exists, 🔄 `run_bash` or `run_py` will sync the repos with the latest available version.**
+> 
 | Command / Script                          | Description                                                                 |
 |-------------------------------------------|-----------------------------------------------------------------------------|
-| `make run_bash`                          | Run the Bash script to clone all repositories from the organization         |
-| `make run_py`                            | Run the Python script (uses the virtual environment) to clone repositories  |
-| `python3 clone_org_repos.py <org>`        | Clone repositories from a custom organization using Python                  |
-| `./clone_org_repos.bash <org>`           | Clone repositories from a custom organization using Bash                    |
+| `make run_bash`                          | Clone or sync repositories from the organization (Bash script)              |
+| `make run_py`                            | Clone or sync repositories from the organization (Python script)            |
+| `python3 clone_org_repos.py <org>`        | Clone/sync repositories from a custom organization using Python             |
+| `./clone_org_repos.bash <org>`           | Clone/sync repositories from a custom organization using Bash               |
 
 - __NOTE__: 
   Remember to activate virtual environment, when you use this repo
@@ -117,19 +126,33 @@ __Note__: If you provide an organization name as a command-line argument, it wil
 
 
 ## Folder Naming Convention
-- All the cloned repos will be stored at 'cloned_repos' (default, but configurable name at 'config.env' file)
 
-- When cloning, both scripts create cloned repos under sub-directories inside 'cloned_repos' named as :
+- All cloned repositories are stored in the folder defined by `MASTER_FOLDER` (default: `cloned_repos`, configurable in `config.env`)
+- Repositories are organized by organization name directly under the master folder
+- **Smart behavior**: Scripts automatically detect if repositories already exist and will sync them instead of re-cloning
 
-  ```
-  <organization_name>_<YYYYMMDD_HHMMSS>
-  ```
+### Folder Structure
 
-  For example, cloning the organization `DeltaE` on August 27, 2025 at 14:30:00 will create:
+```text
+cloned_repos/
+├── DeltaE/
+│   ├── clone_summary.txt    # Operation history and results
+│   ├── repo1/
+│   ├── repo2/
+│   └── repo3/
+└── AnotherOrg/
+    ├── clone_summary.txt
+    ├── project1/
+    └── project2/
+```
 
-  ```
-  DeltaE_20250827_143000/
-  ```
+### Clone Summary File
+
+Each organization folder contains a `clone_summary.txt` file that tracks:
+- Organization name and operation timestamps
+- List of cloned/synced repositories with status
+- Success/failure counts for each operation
+- Complete operation history
 
 ## Notes
 

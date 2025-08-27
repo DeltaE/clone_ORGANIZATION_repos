@@ -22,3 +22,8 @@ run_bash:
 
 run_py:
 	$(PYTHON) clone_org_repos.py
+
+
+.PHONY: init_git_remotes
+init_git_remotes:
+	bash init_git_remotes.bash
