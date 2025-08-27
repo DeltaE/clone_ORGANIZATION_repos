@@ -11,7 +11,7 @@ This repository provides scripts to efficiently clone all repositories from a Gi
 
 Follow these steps to clone all repositories from a GitHub organization:
 
-> Windows instructions to be added in next release !
+ > Windows instructions to be added in next release !
 
 ### Linux/MAC
 1. **Clone this repository:**
@@ -21,7 +21,7 @@ Follow these steps to clone all repositories from a GitHub organization:
   ```
 
 2. **Edit `config.env`:**
-  > __DeltaE__ research lab folks can skip this step!
+   > __DeltaE__ research lab folks can skip this step!
   - Set `ORG_NAME` to your organization name (default: `DeltaE`).
   - Set `GITHUB_TOKEN` if you need access to private repositories or higher API rate limits.
 
@@ -72,26 +72,13 @@ API_URL=https://api.github.com/orgs
 # Optional: GitHub token for private repos and higher API rate limits
 GITHUB_TOKEN=your_token_here
 ```
-
-
+#### Configuration Variables
 - `ORG_NAME`: The default GitHub organization to clone from. If not set, defaults to `DeltaE`.
 - `API_URL`: The base API URL for GitHub. Usually does not need to be changed.
 - `GITHUB_TOKEN`: (Optional) GitHub token for authenticating API requests. Set this to access private repositories and increase API rate limits. If not set, only public repositories are accessible and rate limits are lower.
+  > [How to manage your github tokens?](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens)
 
 __Note__: If you provide an organization name as a command-line argument, it will override the value in `config.env`.
-
-### Configuration Variables
-
-| Variable         | Description                                                                 |
-|------------------|-----------------------------------------------------------------------------|
-| `ORG_NAME`       | The GitHub organization to clone from. Defaults to `DeltaE` if not set.     |
-| `API_URL`        | The base API URL for GitHub. Usually does not need to be changed.           |
-| `GITHUB_TOKEN`   | (Optional) GitHub token for private repos and higher API rate limits.       |
-
-If `GITHUB_TOKEN` is set, the script will use it to authenticate API requests, allowing access to private repositories and increasing the rate limit for cloning large organizations.
-
-
-
 
 
 ## Usage
@@ -107,7 +94,12 @@ If `GITHUB_TOKEN` is set, the script will use it to authenticate API requests, a
 | `python3 clone_org_repos.py <org>`        | Clone repositories from a custom organization using Python                  |
 | `./clone_org_repos.bash <org>`           | Clone repositories from a custom organization using Bash                    |
 
+- __NOTE__: 
+  Remember to activate virtual environment, when you use this repo
 
+  ```bash
+  source .venv/bin/activate
+  ```
 
 ### Environment & Token Setup
 | Command / Script                          | Description                                                                 |
