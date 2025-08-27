@@ -1,8 +1,56 @@
+<img src="docs/static/org_gitrepo_cloner_logo_202508.png" alt="Cloner Logo" width="200"/>
+
+
  # Clone Organization repos
 
-This repository provides scripts to efficiently clone all repositories from a GitHub organization. Both Bash and Python scripts are included for flexibility. At successful run of the script you will get as __new Directory with the Organization name__ (as defined in config) with a cloning instance's __datetime stamp__.
+This repository provides scripts to efficiently clone all repositories from a GitHub organization. Both Bash and Python scripts are included for flexibility. At successful run of the script you will get as __new Directory with the Organization name__ (as defined in config) with a cloning instance's __datetime stamp__. Use the [config file](https://github.com/DeltaE/clone_ORGANIZATION_repos/blob/main/config.env) to set your __GITHUB_TOKEN__ to access private clones from the organization.
 
-## Setup
+## Quick Start
+
+Follow these steps to clone all repositories from a GitHub organization:
+
+1. **Clone this repository:**
+  ```bash
+  git clone https://github.com/DeltaE/clone_ORGANIZATION_repos.git
+  cd clone_ORGANIZATION_repos
+  ```
+
+2. **Edit `config.env`:**
+  > __DeltaE__ research lab folks can skip this step!
+  - Set `ORG_NAME` to your organization name (default: `DeltaE`).
+  - Set `GITHUB_TOKEN` if you need access to private repositories or higher API rate limits.
+
+3. **Create a Python virtual environment:**
+  ```bash
+  make venv
+  ```
+
+4. **Install dependencies:**
+  ```bash
+  make install
+  ```
+
+5. **Run the cloning script:**
+  - Bash version:
+    ```bash
+    make run_bash
+    ```
+  - Python version (uses the virtual environment):
+    ```bash
+    make run_py
+    ```
+
+6. **Find your cloned repositories:**
+  - All repositories will be in a folder named `<organization_name>_<YYYYMMDD_HHMMSS>`.
+
+
+For custom organization names without using config, you can run:
+```bash
+python3 clone_org_repos.py <organization_name>
+./clone_org_repos.bash <organization_name>
+```
+
+## Customizations Guide
 
 ### Configuration File
 
@@ -12,62 +60,40 @@ You can use a `config.env` file to set the organization name and API URL for clo
 # config.env example
 ORG_NAME=YourOrgName
 API_URL=https://api.github.com/orgs
+# Optional: GitHub token for private repos and higher API rate limits
+GITHUB_TOKEN=your_token_here
 ```
+
 
 - `ORG_NAME`: The default GitHub organization to clone from. If not set, defaults to `DeltaE`.
 - `API_URL`: The base API URL for GitHub. Usually does not need to be changed.
+- `GITHUB_TOKEN`: (Optional) GitHub token for authenticating API requests. Set this to access private repositories and increase API rate limits. If not set, only public repositories are accessible and rate limits are lower.
 
-If you provide an organization name as a command-line argument, it will override the value in `config.env`.
+__Note__: If you provide an organization name as a command-line argument, it will override the value in `config.env`.
+
+### Configuration Variables
+
+| Variable         | Description                                                                 |
+|------------------|-----------------------------------------------------------------------------|
+| `ORG_NAME`       | The GitHub organization to clone from. Defaults to `DeltaE` if not set.     |
+| `API_URL`        | The base API URL for GitHub. Usually does not need to be changed.           |
+| `GITHUB_TOKEN`   | (Optional) GitHub token for private repos and higher API rate limits.       |
+
+If `GITHUB_TOKEN` is set, the script will use it to authenticate API requests, allowing access to private repositories and increasing the rate limit for cloning large organizations.
 
 
-1. **Create a Python virtual environment:**
 
-  ```bash
-  make venv
-  ```
-
-2. **Install dependencies:**
-
-  (Python only, add dependencies to `requirements.txt` if needed)
-
-  ```bash
-  make install
-  ```
 
 
 ## Usage
 
-
-### Bash script
-
-Run the Bash script to clone all repositories from a GitHub organization:
-
-```bash
-make run_bash
-```
-
-### Python script
-
-Run the Python script (uses the virtual environment):
-
-```bash
-make run_py
-```
-
-#### Custom organization name
-By default, both scripts use `DeltaE` as the organization name. To specify another organization, pass it as an argument:
-
-```bash
-python3 clone_org_repos.py <organization_name>
-./clone_org_repos.bash <organization_name>
-```
-
-#### GitHub Token
-Set the `GITHUB_TOKEN` environment variable for private repositories or higher API rate limits:
-
-```bash
-export GITHUB_TOKEN=your_token_here
-```
+| Command / Script                        | Description                                                                 |
+|-----------------------------------------|-----------------------------------------------------------------------------|
+| `make run_bash`                        | Run the Bash script to clone all repositories from the organization         |
+| `make run_py`                          | Run the Python script (uses the virtual environment) to clone repositories  |
+| `python3 clone_org_repos.py <org>`      | Clone repositories from a custom organization using Python                  |
+| `./clone_org_repos.bash <org>`         | Clone repositories from a custom organization using Bash                    |
+| `export GITHUB_TOKEN=your_token_here`   | Set token for private repos or higher API rate limits (optional)            |
 
 
 ## Files
@@ -79,7 +105,7 @@ export GITHUB_TOKEN=your_token_here
 - `requirements.txt`: Python dependencies for the script.
 
 
-## Notes
+
 
 
 ## Folder Naming Convention
@@ -100,5 +126,5 @@ All repositories will be cloned inside this folder.
 
 ## Notes
 
-- Ensure you have Python 3 installed.
+- For Python script usage, ensure you have Python 3 installed.
 - Customize `requirements.txt` for additional Python dependencies.
