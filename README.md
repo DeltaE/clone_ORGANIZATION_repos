@@ -9,6 +9,7 @@ This repository provides scripts to efficiently clone all repositories from a Gi
 
 Follow these steps to clone all repositories from a GitHub organization:
 
+### Linux/MAC
 1. **Clone this repository:**
   ```bash
   git clone https://github.com/DeltaE/clone_ORGANIZATION_repos.git
@@ -30,7 +31,12 @@ Follow these steps to clone all repositories from a GitHub organization:
   make install
   ```
 
-5. **Run the cloning script:**
+5. Activate Virtual Environment
+  ```bash
+  source .venv/bin/activate
+  ```
+
+6. **Run the cloning script:**
   - Bash version:
     ```bash
     make run_bash
@@ -39,8 +45,26 @@ Follow these steps to clone all repositories from a GitHub organization:
     ```bash
     make run_py
     ```
+---
+### Windows Instructions
 
-6. **Find your cloned repositories:**
+  For Windows users:
+
+  1. Install [Git for Windows](https://gitforwindows.org/) and [jq for Windows](https://stedolan.github.io/jq/download/).
+  2. Open Command Prompt and navigate to the project folder.
+  3. (Optional) Edit `config.env` to set your organization and token.
+  4. Run (choose one):
+    - To use Makefile:
+      ```cmd
+      make run_bat
+      ```
+    - Or run the batch script directly:
+      ```cmd
+      clone_org_repos.bat <organization_name>
+      ```
+
+---
+**Find your cloned repositories:**
   - All repositories will be in a folder named `<organization_name>_<YYYYMMDD_HHMMSS>`.
 
 
@@ -87,13 +111,29 @@ If `GITHUB_TOKEN` is set, the script will use it to authenticate API requests, a
 
 ## Usage
 
-| Command / Script                        | Description                                                                 |
-|-----------------------------------------|-----------------------------------------------------------------------------|
-| `make run_bash`                        | Run the Bash script to clone all repositories from the organization         |
-| `make run_py`                          | Run the Python script (uses the virtual environment) to clone repositories  |
-| `python3 clone_org_repos.py <org>`      | Clone repositories from a custom organization using Python                  |
-| `./clone_org_repos.bash <org>`         | Clone repositories from a custom organization using Bash                    |
-| `export GITHUB_TOKEN=your_token_here`   | Set token for private repos or higher API rate limits (optional)            |
+
+### Cloning Scripts (Choose one based on your OS)
+
+#### Linux/macOS
+| Command / Script                          | Description                                                                 |
+|-------------------------------------------|-----------------------------------------------------------------------------|
+| `make run_bash`                          | Run the Bash script to clone all repositories from the organization         |
+| `make run_py`                            | Run the Python script (uses the virtual environment) to clone repositories  |
+| `python3 clone_org_repos.py <org>`        | Clone repositories from a custom organization using Python                  |
+| `./clone_org_repos.bash <org>`           | Clone repositories from a custom organization using Bash                    |
+
+#### Windows
+| Command / Script                          | Description                                                                 |
+|-------------------------------------------|-----------------------------------------------------------------------------|
+| `make run_bat`                           | Run the Windows batch script to clone all repositories                      |
+| `clone_org_repos.bat <org>`              | Clone repositories from a custom organization using Batch                   |
+| `python clone_org_repos.py <org>`         | Clone repositories from a custom organization using Python                  |
+
+### Environment & Token Setup
+| Command / Script                          | Description                                                                 | OS                |
+|-------------------------------------------|-----------------------------------------------------------------------------|-------------------|
+| `set GITHUB_TOKEN=your_token_here`       | Set token for private repos or higher API rate limits (optional)            | Windows           |
+| `export GITHUB_TOKEN=your_token_here`     | Set token for private repos or higher API rate limits (optional)            | Linux/macOS       |
 
 
 ## Files
