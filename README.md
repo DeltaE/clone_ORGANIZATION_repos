@@ -94,7 +94,7 @@ __Note__: If you provide an organization name as a command-line argument, it wil
 ### Cloning Scripts (Choose one based on your OS)
 
 #### Linux/macOS
-> 🆕 **If the cloned repo exists, 🔄 `run_bash` or `run_py` will sync the repos with the latest available version.**
+> 🆕 **If the cloned repo exists, 🔄 `make run_bash` or `make run_py` will sync the repos with the latest available version.**
 > 
 | Command / Script                          | Description                                                                 |
 |-------------------------------------------|-----------------------------------------------------------------------------|
