@@ -11,7 +11,7 @@ This repository provides scripts to efficiently clone all repositories from a Gi
 
 Follow these steps to clone all repositories from a GitHub organization:
 
-> Windows instructions to be added in next release !
+ > Windows instructions to be added in next release !
 
 ### Linux/MAC
 1. **Clone this repository:**
@@ -21,7 +21,7 @@ Follow these steps to clone all repositories from a GitHub organization:
   ```
 
 2. **Edit `config.env`:**
-  > __DeltaE__ research lab folks can skip this step!
+   > __DeltaE__ research lab folks can skip this step!
   - Set `ORG_NAME` to your organization name (default: `DeltaE`).
   - Set `GITHUB_TOKEN` if you need access to private repositories or higher API rate limits.
 
@@ -104,7 +104,12 @@ If `GITHUB_TOKEN` is set, the script will use it to authenticate API requests, a
 | `python3 clone_org_repos.py <org>`        | Clone repositories from a custom organization using Python                  |
 | `./clone_org_repos.bash <org>`           | Clone repositories from a custom organization using Bash                    |
 
+- __NOTE__: 
+  Remember to activate virtual environment, when you use this repo
 
+  ```bash
+  source .venv/bin/activate
+  ```
 
 ### Environment & Token Setup
 | Command / Script                          | Description                                                                 |
