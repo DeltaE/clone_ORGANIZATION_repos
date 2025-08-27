@@ -3,7 +3,7 @@
 
  # Clone Organization repos
 
-This repository provides scripts to efficiently clone all repositories from a GitHub organization. Both Bash and Python scripts are included for flexibility. At successful run of the script you will get the cloned repositories inside '__clones_repos__' (can be set via config) . Use the [config file](https://github.com/DeltaE/clone_ORGANIZATION_repos/blob/main/config.env) to set your __GITHUB_TOKEN__ to access private clones from the organization.
+This repository provides scripts to efficiently clone all repositories from a GitHub organization. Both Bash and Python scripts are included for flexibility. At successful run of the script you will get the cloned repositories inside '__cloned_repos__' (configurable folder name) . Use the [config file](https://github.com/DeltaE/clone_ORGANIZATION_repos/blob/main/config.env) to set your __GITHUB_TOKEN__ to access private clones from the organization.
 
 > Current setup is designed for Linux (or WSL2)/MACOs. Windows setup will be coming soon...
 
