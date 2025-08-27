@@ -5,6 +5,8 @@
 
 This repository provides scripts to efficiently clone all repositories from a GitHub organization. Both Bash and Python scripts are included for flexibility. At successful run of the script you will get as __new Directory with the Organization name__ (as defined in config) with a cloning instance's __datetime stamp__. Use the [config file](https://github.com/DeltaE/clone_ORGANIZATION_repos/blob/main/config.env) to set your __GITHUB_TOKEN__ to access private clones from the organization.
 
+> Curent setup is designed for Linux (or WSL2)/MACOs. Windows setup will be coming soon...
+
 ## Quick Start
 
 Follow these steps to clone all repositories from a GitHub organization:
