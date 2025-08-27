@@ -3,7 +3,7 @@ VENV=.venv
 PYTHON=$(VENV)/bin/python
 
 
-.PHONY: venv install run_bash run_py run_bat activate_venv
+.PHONY: venv install run_bash run_py activate_venv
 
 activate_venv:
 	@echo "To activate the venv, run: source $(VENV)/bin/activate"
@@ -19,8 +19,6 @@ install:
 run_bash:
 	bash clone_org_repos.bash
 
-run_bat:
-	cmd /c clone_org_repos.bat
 
 run_py:
 	$(PYTHON) clone_org_repos.py

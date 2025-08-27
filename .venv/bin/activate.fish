@@ -29,7 +29,7 @@ end
 # unset irrelevant variables
 deactivate nondestructive
 
-set -gx VIRTUAL_ENV /local-scratch/localhome/mei3/eliasinul/work/clone_deltaE_repos/.venv
+set -gx VIRTUAL_ENV /local-scratch/localhome/mei3/eliasinul/work/clone_ORGANIZATION_repos/.venv
 
 set -gx _OLD_VIRTUAL_PATH $PATH
 set -gx PATH "$VIRTUAL_ENV/"bin $PATH

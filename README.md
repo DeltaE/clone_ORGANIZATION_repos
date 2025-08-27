@@ -9,6 +9,8 @@ This repository provides scripts to efficiently clone all repositories from a Gi
 
 Follow these steps to clone all repositories from a GitHub organization:
 
+> Windows instructions to be added in next release !
+
 ### Linux/MAC
 1. **Clone this repository:**
   ```bash
@@ -122,18 +124,12 @@ If `GITHUB_TOKEN` is set, the script will use it to authenticate API requests, a
 | `python3 clone_org_repos.py <org>`        | Clone repositories from a custom organization using Python                  |
 | `./clone_org_repos.bash <org>`           | Clone repositories from a custom organization using Bash                    |
 
-#### Windows
-| Command / Script                          | Description                                                                 |
-|-------------------------------------------|-----------------------------------------------------------------------------|
-| `make run_bat`                           | Run the Windows batch script to clone all repositories                      |
-| `clone_org_repos.bat <org>`              | Clone repositories from a custom organization using Batch                   |
-| `python clone_org_repos.py <org>`         | Clone repositories from a custom organization using Python                  |
+
 
 ### Environment & Token Setup
-| Command / Script                          | Description                                                                 | OS                |
-|-------------------------------------------|-----------------------------------------------------------------------------|-------------------|
-| `set GITHUB_TOKEN=your_token_here`       | Set token for private repos or higher API rate limits (optional)            | Windows           |
-| `export GITHUB_TOKEN=your_token_here`     | Set token for private repos or higher API rate limits (optional)            | Linux/macOS       |
+| Command / Script                          | Description                                                                 |
+|-------------------------------------------|-----------------------------------------------------------------------------|
+| `export GITHUB_TOKEN=your_token_here`     | Set token for private repos or higher API rate limits (optional)            |
 
 
 ## Files
