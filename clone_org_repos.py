@@ -12,6 +12,46 @@ import requests
 from datetime import datetime
 from pathlib import Path
 
+def validate_token(token):
+    """Validate GitHub token and show rate limit info"""
+    if not token:
+        print("⚠️  No GitHub token provided - using unauthenticated requests (60 requests/hour limit)")
+        return False
+    
+    print(f"🔐 Validating GitHub token...")
+    headers = {"Authorization": f"token {token}"}
+    
+    try:
+        # Test token with user endpoint
+        response = requests.get("https://api.github.com/user", headers=headers)
+        
+        if response.status_code == 200:
+            user_data = response.json()
+            username = user_data.get('login', 'Unknown')
+            print(f"✅ Token is valid - authenticated as: {username}")
+            
+            # Check rate limit
+            rate_response = requests.get("https://api.github.com/rate_limit", headers=headers)
+            if rate_response.status_code == 200:
+                rate_data = rate_response.json()
+                core_limit = rate_data['resources']['core']
+                remaining = core_limit['remaining']
+                limit = core_limit['limit']
+                print(f"📊 API Rate limit: {remaining}/{limit} requests remaining")
+            
+            return True
+        elif response.status_code == 401:
+            print(f"❌ Token is invalid or expired")
+            print(f"   Response: {response.json().get('message', 'Unknown error')}")
+            return False
+        else:
+            print(f"❌ Token validation failed with status: {response.status_code}")
+            return False
+            
+    except Exception as e:
+        print(f"❌ Error validating token: {e}")
+        return False
+
 def get_repositories(org_name, token=None):
     """Fetch all repositories from the organization"""
     repos = []
@@ -28,9 +68,23 @@ def get_repositories(org_name, token=None):
         
         if response.status_code == 404:
             print(f"❌ Organization '{org_name}' not found")
+            if not token:
+                print("   💡 Try with a valid GitHub token if this is a private organization")
+            return []
+        elif response.status_code == 401:
+            print(f"❌ Authentication failed")
+            print("   💡 Check if your GitHub token is valid and has the right permissions")
+            return []
+        elif response.status_code == 403:
+            print(f"❌ Access forbidden (403)")
+            if 'rate limit' in response.text.lower():
+                print("   💡 API rate limit exceeded. Try again later or use a valid GitHub token")
+            else:
+                print("   💡 Token may not have permission to access this organization")
             return []
         elif response.status_code != 200:
             print(f"❌ API error: {response.status_code}")
+            print(f"   Response: {response.text[:200]}")
             return []
         
         page_repos = response.json()
@@ -113,7 +167,7 @@ def sync_repositories(master_folder):
         print(f"\n📊 No repositories found to sync")
     return successful, failed
 
-def clone_repositories(repos, master_folder):
+def clone_repositories(repos, master_folder, token=None):
     """Clone all repositories into the master folder"""
     successful = 0
     failed = 0
@@ -128,10 +182,18 @@ def clone_repositories(repos, master_folder):
     
     for i, repo in enumerate(repos, 1):
         repo_name = repo['name']
-        clone_url = repo['clone_url']
-        repo_path = master_folder / repo_name
+        is_private = repo.get('private', False)
         
-        print(f"[{i}/{len(repos)}] Cloning {repo_name}...", end=" ")
+        # Use authenticated URL for private repos or when token is available
+        if token and (is_private or True):  # Use token for all repos when available
+            clone_url = f"https://{token}@github.com/{repo['full_name']}.git"
+        else:
+            clone_url = repo['clone_url']
+        
+        repo_path = master_folder / repo_name
+        privacy_indicator = "🔒" if is_private else "🔓"
+        
+        print(f"[{i}/{len(repos)}] Cloning {privacy_indicator} {repo_name}...", end=" ")
         
         try:
             result = subprocess.run(
@@ -144,18 +206,21 @@ def clone_repositories(repos, master_folder):
             if result.returncode == 0:
                 print("✅")
                 with open(summary_file, 'a') as f:
-                    f.write(f"✅ {repo_name}\n")
+                    f.write(f"✅ {privacy_indicator} {repo_name}\n")
                 successful += 1
             else:
                 print("❌")
+                error_msg = result.stderr.strip() if result.stderr else "Unknown error"
+                print(f"   Error: {error_msg[:100]}")
                 with open(summary_file, 'a') as f:
-                    f.write(f"❌ {repo_name} (FAILED)\n")
+                    f.write(f"❌ {privacy_indicator} {repo_name} (FAILED: {error_msg[:50]})\n")
                 failed += 1
                 
-        except Exception:
+        except Exception as e:
             print("❌")
+            print(f"   Error: {str(e)[:100]}")
             with open(summary_file, 'a') as f:
-                f.write(f"❌ {repo_name} (FAILED)\n")
+                f.write(f"❌ {privacy_indicator} {repo_name} (FAILED: {str(e)[:50]})\n")
             failed += 1
     
     # Add summary footer
@@ -170,6 +235,13 @@ def clone_repositories(repos, master_folder):
 def main():
     org_name = sys.argv[1] if len(sys.argv) > 1 else "DeltaE"
     token = os.getenv('GITHUB_TOKEN')
+
+    print(f"🔄 Cloning all repositories from organization: {org_name}")
+    
+    # Validate token first
+    token_valid = validate_token(token)
+    if not token_valid and token:
+        print("⚠️  Continuing with invalid token - some operations may fail")
 
     # Use MASTER_FOLDER from environment/config, default to 'cloned_repos'
     master_folder_base = os.getenv('MASTER_FOLDER', 'cloned_repos')
@@ -200,7 +272,7 @@ def main():
     # Get and clone repositories
     repos = get_repositories(org_name, token)
     if repos:
-        clone_repositories(repos, master_folder)
+        clone_repositories(repos, master_folder, token)
         print(f"\n🎉 All repositories cloned in: {master_folder.absolute()}")
     else:
         print("❌ No repositories to clone")

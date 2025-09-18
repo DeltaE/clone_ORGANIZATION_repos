@@ -88,10 +88,21 @@ GITHUB_TOKEN=your_token_here
 __Note__: If you provide an organization name as a command-line argument, it will override the value in `config.env`.
 
 
-## Usage
+## System and Tool Requirements:
+- This tool uses _make_ commands and _python_ to handle virtuak environment and script runs. Please use the following bash commands if you does not have these tool installed in your system:
+  
+```bash
+	sudo apt install make
+	sudo apt install python3.12-venv
+```
+
+
+## Script Usage
 
 
 ### Cloning Scripts (Choose one based on your OS)
+
+
 
 #### Linux/macOS
 > 🆕 **If the cloned repo exists, 🔄 `make run_bash` or `make run_py` will sync the repos with the latest available version.**

@@ -35,7 +35,49 @@ echo "Organization: $ORG_NAME" >> "$MASTER_FOLDER/clone_summary.txt"
 echo "Date/Time: $TIMESTAMP" >> "$MASTER_FOLDER/clone_summary.txt"
 echo "========================================" >> "$MASTER_FOLDER/clone_summary.txt"
 
-# Function to get repositories
+# Function to validate GitHub token
+validate_token() {
+    local token="$1"
+    
+    if [ -z "$token" ]; then
+        echo "⚠️  No GitHub token provided - using unauthenticated requests (60 requests/hour limit)"
+        return 1
+    fi
+    
+    echo "🔐 Validating GitHub token..."
+    
+    # Test token with user endpoint
+    local response
+    response=$(curl -s -H "Authorization: token $token" https://api.github.com/user 2>/dev/null)
+    
+    if echo "$response" | grep -q '"login"'; then
+        local username
+        username=$(echo "$response" | grep -o '"login": "[^"]*' | cut -d'"' -f4)
+        echo "✅ Token is valid - authenticated as: $username"
+        
+        # Check rate limit
+        local rate_response
+        rate_response=$(curl -s -H "Authorization: token $token" https://api.github.com/rate_limit 2>/dev/null)
+        if echo "$rate_response" | grep -q '"remaining"'; then
+            local remaining limit
+            remaining=$(echo "$rate_response" | grep -o '"remaining": [0-9]*' | cut -d' ' -f2)
+            limit=$(echo "$rate_response" | grep -o '"limit": [0-9]*' | cut -d' ' -f2)
+            echo "📊 API Rate limit: $remaining/$limit requests remaining"
+        fi
+        
+        return 0
+    elif echo "$response" | grep -q '"message": "Bad credentials"'; then
+        echo "❌ Token is invalid or expired"
+        echo "   Response: Bad credentials"
+        return 1
+    else
+        echo "❌ Token validation failed"
+        echo "   Response: $response" | head -c 100
+        return 1
+    fi
+}
+
+# Function to get repositories with full info
 get_repos() {
     local org="$1"
     local page=1
@@ -50,23 +92,66 @@ get_repos() {
         fi
         
         local response
-        response=$(eval curl -s $headers "$url" 2>/dev/null)
+        response=$(eval curl -s -w "HTTPSTATUS:%{http_code}" $headers "$url" 2>/dev/null)
         
-        if [[ "$response" == *"\"message\": \"Not Found\""* ]]; then
-            echo "❌ Organization '$org' not found" >&2
-            return 1
-        fi
+        local http_code
+        http_code=$(echo "$response" | grep -o "HTTPSTATUS:[0-9]*" | cut -d: -f2)
+        local body
+        body=$(echo "$response" | sed 's/HTTPSTATUS:[0-9]*$//')
         
-        local repos
-        repos=$(echo "$response" | grep -o '"clone_url": "[^"]*' | cut -d'"' -f4)
+        case "$http_code" in
+            404)
+                echo "❌ Organization '$org' not found" >&2
+                if [ -z "$GITHUB_TOKEN" ]; then
+                    echo "   💡 Try with a valid GitHub token if this is a private organization" >&2
+                fi
+                return 1
+                ;;
+            401)
+                echo "❌ Authentication failed" >&2
+                echo "   💡 Check if your GitHub token is valid and has the right permissions" >&2
+                return 1
+                ;;
+            403)
+                echo "❌ Access forbidden (403)" >&2
+                if echo "$body" | grep -q -i "rate limit"; then
+                    echo "   💡 API rate limit exceeded. Try again later or use a valid GitHub token" >&2
+                else
+                    echo "   💡 Token may not have permission to access this organization" >&2
+                fi
+                return 1
+                ;;
+            200)
+                # Success - continue processing
+                ;;
+            *)
+                echo "❌ API error: HTTP $http_code" >&2
+                echo "   Response: $(echo "$body" | head -c 100)" >&2
+                return 1
+                ;;
+        esac
         
-        if [ -z "$repos" ]; then
+        # Extract repo info (name, full_name, private status, clone_url)
+        local repos_info
+        repos_info=$(echo "$body" | grep -E '"(name|full_name|private|clone_url)"' | paste - - - -)
+        
+        if [ -z "$repos_info" ]; then
             break
         fi
         
-        while IFS= read -r repo_url; do
-            [ -n "$repo_url" ] && all_repos+=("$repo_url")
-        done <<< "$repos"
+        while IFS= read -r repo_line; do
+            if [ -n "$repo_line" ]; then
+                local name full_name is_private clone_url
+                name=$(echo "$repo_line" | grep -o '"name": "[^"]*' | head -1 | cut -d'"' -f4)
+                full_name=$(echo "$repo_line" | grep -o '"full_name": "[^"]*' | cut -d'"' -f4)
+                is_private=$(echo "$repo_line" | grep -o '"private": [^,]*' | cut -d' ' -f2 | tr -d ',')
+                clone_url=$(echo "$repo_line" | grep -o '"clone_url": "[^"]*' | cut -d'"' -f4)
+                
+                if [ -n "$name" ] && [ -n "$full_name" ] && [ -n "$clone_url" ]; then
+                    all_repos+=("$name|$full_name|$is_private|$clone_url")
+                fi
+            fi
+        done <<< "$repos_info"
         
         ((page++))
     done
@@ -139,19 +224,38 @@ clone_repos() {
     echo "----------------------------------------" >> "$MASTER_FOLDER/clone_summary.txt"
     
     for i in "${!repos[@]}"; do
-        local repo_url="${repos[$i]}"
-        local repo_name=$(basename "$repo_url" .git)
+        local repo_info="${repos[$i]}"
+        IFS='|' read -r repo_name full_name is_private clone_url <<< "$repo_info"
         local num=$((i + 1))
         
-        printf "[%d/%d] Cloning %s... " "$num" "${#repos[@]}" "$repo_name"
+        # Determine clone URL and privacy indicator
+        local actual_clone_url="$clone_url"
+        local privacy_indicator="🔓"
         
-        if git clone "$repo_url" "$MASTER_FOLDER/$repo_name" &>/dev/null; then
+        if [ "$is_private" = "true" ]; then
+            privacy_indicator="🔒"
+            if [ -n "$GITHUB_TOKEN" ]; then
+                actual_clone_url="https://${GITHUB_TOKEN}@github.com/${full_name}.git"
+            fi
+        elif [ -n "$GITHUB_TOKEN" ]; then
+            # Use authenticated URL for all repos when token is available for better reliability
+            actual_clone_url="https://${GITHUB_TOKEN}@github.com/${full_name}.git"
+        fi
+        
+        printf "[%d/%d] Cloning %s %s... " "$num" "${#repos[@]}" "$privacy_indicator" "$repo_name"
+        
+        local clone_output
+        clone_output=$(git clone "$actual_clone_url" "$MASTER_FOLDER/$repo_name" 2>&1)
+        
+        if [ $? -eq 0 ]; then
             echo "✅"
-            echo "✅ $repo_name" >> "$MASTER_FOLDER/clone_summary.txt"
+            echo "✅ $privacy_indicator $repo_name" >> "$MASTER_FOLDER/clone_summary.txt"
             ((successful++))
         else
             echo "❌"
-            echo "❌ $repo_name (FAILED)" >> "$MASTER_FOLDER/clone_summary.txt"
+            local error_msg=$(echo "$clone_output" | head -1 | cut -c1-50)
+            echo "   Error: $error_msg"
+            echo "❌ $privacy_indicator $repo_name (FAILED: $error_msg)" >> "$MASTER_FOLDER/clone_summary.txt"
             ((failed++))
         fi
     done
@@ -180,6 +284,11 @@ main() {
     fi
     
     echo "🔄 Cloning all repositories from organization: $ORG_NAME"
+    
+    # Validate token first
+    if ! validate_token "$GITHUB_TOKEN" && [ -n "$GITHUB_TOKEN" ]; then
+        echo "⚠️  Continuing with invalid token - some operations may fail"
+    fi
     
     # Check if org folder already exists with repos
     if [ -d "$MASTER_FOLDER" ] && [ "$(find "$MASTER_FOLDER" -maxdepth 1 -type d -name "*" | grep -v "^$MASTER_FOLDER$" | wc -l)" -gt 0 ]; then
