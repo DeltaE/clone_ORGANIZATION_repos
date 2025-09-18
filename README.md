@@ -15,6 +15,13 @@ Follow these steps to clone all repositories from a GitHub organization:
 
  > Windows instructions to be added in next release !
 
+### System and Tool Requirements:
+- This tool uses _make_ commands and _python_ to handle virtuak environment and script runs. Please use the following bash commands if you does not have these tool installed in your system:
+  
+```bash
+	sudo apt install make
+	sudo apt install python3.12-venv
+```
 ### Linux/MAC
 1. **Clone this repository:**
   ```bash
@@ -86,16 +93,6 @@ GITHUB_TOKEN=your_token_here
   > [How to manage your github tokens?](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens)
 
 __Note__: If you provide an organization name as a command-line argument, it will override the value in `config.env`.
-
-
-## System and Tool Requirements:
-- This tool uses _make_ commands and _python_ to handle virtuak environment and script runs. Please use the following bash commands if you does not have these tool installed in your system:
-  
-```bash
-	sudo apt install make
-	sudo apt install python3.12-venv
-```
-
 
 ## Script Usage
 
