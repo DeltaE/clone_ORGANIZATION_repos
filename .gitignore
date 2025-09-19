@@ -4,5 +4,5 @@
 cloned_repos/*
 
 
-config.env
 __pycache__
+my_token_EL.txt
