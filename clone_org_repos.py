@@ -12,6 +12,41 @@ import requests
 from datetime import datetime
 from pathlib import Path
 
+def load_config():
+    """Load configuration from config.env file"""
+    config_file = "config.env"
+    if os.path.exists(config_file):
+        with open(config_file, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#') and '=' in line:
+                    key, value = line.split('=', 1)
+                    # Only set if not already in environment
+                    if key not in os.environ:
+                        os.environ[key] = value
+
+def get_repo_statistics(repos):
+    """Calculate repository statistics"""
+    total = len(repos)
+    private = sum(1 for repo in repos if repo.get('private', False))
+    public = total - private
+    return {
+        'total': total,
+        'public': public,
+        'private': private
+    }
+
+def print_repo_summary(repos, title="Repository Summary"):
+    """Print a formatted summary of repositories"""
+    stats = get_repo_statistics(repos)
+    print(f"\n📊 {title}")
+    print("=" * 50)
+    print(f"🔓 Public repositories:  {stats['public']}")
+    print(f"🔒 Private repositories: {stats['private']}")
+    print(f"📦 Total repositories:   {stats['total']}")
+    print("=" * 50)
+    return stats
+
 def validate_token(token):
     """Validate GitHub token and show rate limit info"""
     if not token:
@@ -233,7 +268,10 @@ def clone_repositories(repos, master_folder, token=None):
     return successful, failed
 
 def main():
-    org_name = sys.argv[1] if len(sys.argv) > 1 else "DeltaE"
+    # Load configuration from config.env file
+    load_config()
+    
+    org_name = sys.argv[1] if len(sys.argv) > 1 else os.getenv('ORG_NAME', 'DeltaE')
     token = os.getenv('GITHUB_TOKEN')
 
     print(f"🔄 Cloning all repositories from organization: {org_name}")
@@ -261,21 +299,82 @@ def main():
     
     print(f"📁 Target folder: {master_folder}")
     
+    # Get repositories from the organization first
+    repos = get_repositories(org_name, token)
+    if not repos:
+        print("❌ No repositories found in organization")
+        return
+    
+    # Print repository statistics and update summary file
+    stats = print_repo_summary(repos, f"Organization: {org_name}")
+    with open(summary_file, 'a') as f:
+        f.write("REPOSITORY STATISTICS:\n")
+        f.write(f"🔓 Public repositories:  {stats['public']}\n")
+        f.write(f"🔒 Private repositories: {stats['private']}\n")
+        f.write(f"📦 Total repositories:   {stats['total']}\n")
+        f.write("========================================\n")
+    
     # Check if folder already exists with repos
     existing_repos = [d for d in master_folder.iterdir() if d.is_dir() and (d / ".git").exists()]
     if existing_repos:
-        print(f"� Folder {master_folder} already exists with repositories. Syncing instead of cloning.")
+        print(f"📂 Folder {master_folder} already exists with repositories.")
+        
+        # Get list of existing repo names
+        existing_repo_names = {d.name for d in existing_repos}
+        
+        # Find missing repositories that need to be cloned
+        missing_repos = [repo for repo in repos if repo['name'] not in existing_repo_names]
+        
+        if missing_repos:
+            print(f"🆕 Found {len(missing_repos)} new repositories to clone:")
+            missing_stats = get_repo_statistics(missing_repos)
+            print(f"   🔓 Public: {missing_stats['public']}, 🔒 Private: {missing_stats['private']}")
+            for repo in missing_repos:
+                privacy_indicator = "🔒" if repo.get('private', False) else "🔓"
+                print(f"   {privacy_indicator} {repo['name']}")
+            
+            # Clone missing repositories
+            clone_repositories(missing_repos, master_folder, token)
+        else:
+            print("✅ All organization repositories are already cloned")
+        
+        # Sync all existing repositories
+        print(f"\n🔄 Syncing existing repositories...")
         sync_repositories(master_folder)
-        print(f"\n🎉 All repositories synced in: {master_folder.absolute()}")
+        
+        # Final summary
+        total_repos = len(repos)
+        cloned_repos = len([d for d in master_folder.iterdir() if d.is_dir() and (d / ".git").exists()])
+        print(f"\n🎉 Final Status:")
+        print(f"📁 Location: {master_folder.absolute()}")
+        print(f"📦 Local repositories: {cloned_repos}/{total_repos}")
+        print(f"🔓 Public: {stats['public']} | 🔒 Private: {stats['private']}")
+        
+        # Update summary file with final status
+        with open(summary_file, 'a') as f:
+            f.write(f"\nFINAL STATUS:\n")
+            f.write(f"📦 Local repositories: {cloned_repos}/{total_repos}\n")
+            f.write(f"🔓 Public: {stats['public']} | 🔒 Private: {stats['private']}\n")
+            f.write("========================================\n")
         return
 
-    # Get and clone repositories
-    repos = get_repositories(org_name, token)
-    if repos:
-        clone_repositories(repos, master_folder, token)
-        print(f"\n🎉 All repositories cloned in: {master_folder.absolute()}")
-    else:
-        print("❌ No repositories to clone")
+    # Fresh clone - no existing repos
+    print_repo_summary(repos, "Cloning All Repositories")
+    clone_repositories(repos, master_folder, token)
+    
+    # Final summary for fresh clone
+    cloned_repos = len([d for d in master_folder.iterdir() if d.is_dir() and (d / ".git").exists()])
+    print(f"\n🎉 All repositories cloned!")
+    print(f"📁 Location: {master_folder.absolute()}")
+    print(f"📦 Cloned: {cloned_repos}/{stats['total']} repositories")
+    print(f"🔓 Public: {stats['public']} | 🔒 Private: {stats['private']}")
+    
+    # Update summary file with final status
+    with open(summary_file, 'a') as f:
+        f.write(f"\nFINAL STATUS:\n")
+        f.write(f"📦 Cloned: {cloned_repos}/{stats['total']} repositories\n")
+        f.write(f"🔓 Public: {stats['public']} | 🔒 Private: {stats['private']}\n")
+        f.write("========================================\n")
 
 if __name__ == "__main__":
     main()

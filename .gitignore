@@ -4,3 +4,5 @@
 cloned_repos/*
 
 
+config.env
+__pycache__

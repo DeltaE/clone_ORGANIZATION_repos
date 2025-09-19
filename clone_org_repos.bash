@@ -11,7 +11,42 @@ if [ -f "$CONFIG_FILE" ]; then
 else
     echo "⚠️ Config file $CONFIG_FILE not found. Using default API URL and org name."
     API_URL="https://api.github.com/orgs"
-    ORG_NAME="DeltaE"
+            # Final summary
+        local total_repos=${#repos_array[@]}
+        local cloned_repos=$(find "$MASTER_FOLDER" -maxdepth 1 -type d -name "*" | grep -v "^$MASTER_FOLDER$" | wc -l)
+        echo ""
+        echo "🎉 Final Status:"
+        echo "📁 Location: $(pwd)/$MASTER_FOLDER"
+        echo "📦 Local repositories: $cloned_repos/$total_repos"
+        echo "🔓 Public: $org_public | 🔒 Private: $org_private"
+        
+        # Update summary file with final status
+        echo "" >> "$MASTER_FOLDER/clone_summary.txt"
+        echo "FINAL STATUS:" >> "$MASTER_FOLDER/clone_summary.txt"
+        echo "📦 Local repositories: $cloned_repos/$total_repos" >> "$MASTER_FOLDER/clone_summary.txt"
+        echo "🔓 Public: $org_public | 🔒 Private: $org_private" >> "$MASTER_FOLDER/clone_summary.txt"
+        echo "========================================" >> "$MASTER_FOLDER/clone_summary.txt"
+        return 0
+    fi
+    
+    # Fresh clone - no existing repos
+    print_repo_summary "Cloning All Repositories" "${repos_array[@]}"
+    clone_repos "${repos_array[@]}"
+    
+    # Final summary for fresh clone
+    local cloned_repos=$(find "$MASTER_FOLDER" -maxdepth 1 -type d -name "*" | grep -v "^$MASTER_FOLDER$" | wc -l)
+    echo ""
+    echo "🎉 All repositories cloned!"
+    echo "📁 Location: $(pwd)/$MASTER_FOLDER"
+    echo "📦 Cloned: $cloned_repos/$org_total repositories"
+    echo "🔓 Public: $org_public | 🔒 Private: $org_private"
+    
+    # Update summary file with final status
+    echo "" >> "$MASTER_FOLDER/clone_summary.txt"
+    echo "FINAL STATUS:" >> "$MASTER_FOLDER/clone_summary.txt"
+    echo "📦 Cloned: $cloned_repos/$org_total repositories" >> "$MASTER_FOLDER/clone_summary.txt"
+    echo "🔓 Public: $org_public | 🔒 Private: $org_private" >> "$MASTER_FOLDER/clone_summary.txt"
+    echo "========================================" >> "$MASTER_FOLDER/clone_summary.txt""
 fi
 
 # Allow override from command line argument
@@ -34,6 +69,45 @@ echo "========================================" >> "$MASTER_FOLDER/clone_summary
 echo "Organization: $ORG_NAME" >> "$MASTER_FOLDER/clone_summary.txt"
 echo "Date/Time: $TIMESTAMP" >> "$MASTER_FOLDER/clone_summary.txt"
 echo "========================================" >> "$MASTER_FOLDER/clone_summary.txt"
+
+# Function to calculate repository statistics
+get_repo_stats() {
+    local repos=("$@")
+    local total=${#repos[@]}
+    local public=0
+    local private=0
+    
+    for repo_info in "${repos[@]}"; do
+        IFS='|' read -r repo_name full_name is_private clone_url <<< "$repo_info"
+        if [ "$is_private" = "true" ]; then
+            ((private++))
+        else
+            ((public++))
+        fi
+    done
+    
+    echo "$total|$public|$private"
+}
+
+# Function to print repository summary
+print_repo_summary() {
+    local title="$1"
+    shift
+    local repos=("$@")
+    local stats
+    stats=$(get_repo_stats "${repos[@]}")
+    IFS='|' read -r total public private <<< "$stats"
+    
+    echo ""
+    echo "📊 $title"
+    echo "=================================================="
+    echo "🔓 Public repositories:  $public"
+    echo "🔒 Private repositories: $private"
+    echo "📦 Total repositories:   $total"
+    echo "=================================================="
+    
+    echo "$total|$public|$private"
+}
 
 # Function to validate GitHub token
 validate_token() {
@@ -131,9 +205,14 @@ get_repos() {
                 ;;
         esac
         
-        # Extract repo info (name, full_name, private status, clone_url)
+        # Extract repo info using jq if available, otherwise use grep
         local repos_info
-        repos_info=$(echo "$body" | grep -E '"(name|full_name|private|clone_url)"' | paste - - - -)
+        if command -v jq &> /dev/null; then
+            repos_info=$(echo "$body" | jq -r '.[] | "\(.name)|\(.full_name)|\(.private)|\(.clone_url)"' 2>/dev/null)
+        else
+            # Fallback to grep parsing (less reliable)
+            repos_info=$(echo "$body" | grep -E '"(name|full_name|private|clone_url)"' | grep -v '"license":' | paste - - - -)
+        fi
         
         if [ -z "$repos_info" ]; then
             break
@@ -141,14 +220,20 @@ get_repos() {
         
         while IFS= read -r repo_line; do
             if [ -n "$repo_line" ]; then
-                local name full_name is_private clone_url
-                name=$(echo "$repo_line" | grep -o '"name": "[^"]*' | head -1 | cut -d'"' -f4)
-                full_name=$(echo "$repo_line" | grep -o '"full_name": "[^"]*' | cut -d'"' -f4)
-                is_private=$(echo "$repo_line" | grep -o '"private": [^,]*' | cut -d' ' -f2 | tr -d ',')
-                clone_url=$(echo "$repo_line" | grep -o '"clone_url": "[^"]*' | cut -d'"' -f4)
-                
-                if [ -n "$name" ] && [ -n "$full_name" ] && [ -n "$clone_url" ]; then
-                    all_repos+=("$name|$full_name|$is_private|$clone_url")
+                if command -v jq &> /dev/null; then
+                    # jq output format: name|full_name|private|clone_url
+                    all_repos+=("$repo_line")
+                else
+                    # grep parsing fallback
+                    local name full_name is_private clone_url
+                    name=$(echo "$repo_line" | grep -o '"name": "[^"]*' | head -1 | cut -d'"' -f4)
+                    full_name=$(echo "$repo_line" | grep -o '"full_name": "[^"]*' | cut -d'"' -f4)
+                    is_private=$(echo "$repo_line" | grep -o '"private": [^,]*' | cut -d' ' -f2 | tr -d ',')
+                    clone_url=$(echo "$repo_line" | grep -o '"clone_url": "[^"]*' | cut -d'"' -f4)
+                    
+                    if [ -n "$name" ] && [ -n "$full_name" ] && [ -n "$clone_url" ]; then
+                        all_repos+=("$name|$full_name|$is_private|$clone_url")
+                    fi
                 fi
             fi
         done <<< "$repos_info"
@@ -290,22 +375,13 @@ main() {
         echo "⚠️  Continuing with invalid token - some operations may fail"
     fi
     
-    # Check if org folder already exists with repos
-    if [ -d "$MASTER_FOLDER" ] && [ "$(find "$MASTER_FOLDER" -maxdepth 1 -type d -name "*" | grep -v "^$MASTER_FOLDER$" | wc -l)" -gt 0 ]; then
-        echo "📂 Folder $MASTER_FOLDER already exists with repositories. Syncing instead of cloning."
-        sync_repos "$MASTER_FOLDER"
-        echo ""
-        echo "🎉 All repositories synced in: $(pwd)/$MASTER_FOLDER"
-        return 0
-    fi
-    
-    # Get repositories
+    # Get repositories from the organization first
     echo "🔍 Fetching repositories for $ORG_NAME..."
     local repo_urls
     repo_urls=$(get_repos "$ORG_NAME")
     
     if [ -z "$repo_urls" ]; then
-        echo "❌ No repositories found"
+        echo "❌ No repositories found in organization"
         exit 1
     fi
     
@@ -315,11 +391,108 @@ main() {
         [ -n "$line" ] && repos_array+=("$line")
     done <<< "$repo_urls"
     
-    # Clone all repositories
+    # Print repository statistics and update summary file
+    local stats
+    stats=$(print_repo_summary "Organization: $ORG_NAME" "${repos_array[@]}")
+    IFS='|' read -r org_total org_public org_private <<< "$stats"
+    
+    echo "REPOSITORY STATISTICS:" >> "$MASTER_FOLDER/clone_summary.txt"
+    echo "🔓 Public repositories:  $org_public" >> "$MASTER_FOLDER/clone_summary.txt"
+    echo "🔒 Private repositories: $org_private" >> "$MASTER_FOLDER/clone_summary.txt"
+    echo "📦 Total repositories:   $org_total" >> "$MASTER_FOLDER/clone_summary.txt"
+    echo "========================================" >> "$MASTER_FOLDER/clone_summary.txt"
+    
+    # Check if org folder already exists with repos
+    if [ -d "$MASTER_FOLDER" ] && [ "$(find "$MASTER_FOLDER" -maxdepth 1 -type d -name "*" | grep -v "^$MASTER_FOLDER$" | wc -l)" -gt 0 ]; then
+        echo "📂 Folder $MASTER_FOLDER already exists with repositories."
+        
+        # Get list of existing repo names
+        local existing_repos=()
+        for repo_dir in "$MASTER_FOLDER"/*; do
+            if [ -d "$repo_dir/.git" ]; then
+                existing_repos+=($(basename "$repo_dir"))
+            fi
+        done
+        
+        # Find missing repositories that need to be cloned
+        local missing_repos=()
+        for repo_info in "${repos_array[@]}"; do
+            IFS='|' read -r repo_name full_name is_private clone_url <<< "$repo_info"
+            local found=false
+            for existing_repo in "${existing_repos[@]}"; do
+                if [ "$repo_name" = "$existing_repo" ]; then
+                    found=true
+                    break
+                fi
+            done
+            if [ "$found" = false ]; then
+                missing_repos+=("$repo_info")
+            fi
+        done
+        
+        if [ ${#missing_repos[@]} -gt 0 ]; then
+            echo "🆕 Found ${#missing_repos[@]} new repositories to clone:"
+            local missing_stats
+            missing_stats=$(get_repo_stats "${missing_repos[@]}")
+            IFS='|' read -r missing_total missing_public missing_private <<< "$missing_stats"
+            echo "   🔓 Public: $missing_public, 🔒 Private: $missing_private"
+            
+            for repo_info in "${missing_repos[@]}"; do
+                IFS='|' read -r repo_name full_name is_private clone_url <<< "$repo_info"
+                local privacy_indicator="🔓"
+                if [ "$is_private" = "true" ]; then
+                    privacy_indicator="🔒"
+                fi
+                echo "   $privacy_indicator $repo_name"
+            done
+            
+            # Clone missing repositories
+            clone_repos "${missing_repos[@]}"
+        else
+            echo "✅ All organization repositories are already cloned"
+        fi
+        
+        # Sync all existing repositories
+        echo ""
+        echo "🔄 Syncing existing repositories..."
+        sync_repos "$MASTER_FOLDER"
+        
+        # Final summary
+        local total_repos=${#repos_array[@]}
+        local cloned_repos=$(find "$MASTER_FOLDER" -maxdepth 1 -type d -name "*" | grep -v "^$MASTER_FOLDER$" | wc -l)
+        echo ""
+        echo "🎉 Final Status:"
+        echo "📁 Location: $(pwd)/$MASTER_FOLDER"
+        echo "📦 Local repositories: $cloned_repos/$total_repos"
+        echo "🔓 Public: $public | 🔒 Private: $private"
+        
+        # Update summary file with final status
+        echo "" >> "$MASTER_FOLDER/clone_summary.txt"
+        echo "FINAL STATUS:" >> "$MASTER_FOLDER/clone_summary.txt"
+        echo "� Local repositories: $cloned_repos/$total_repos" >> "$MASTER_FOLDER/clone_summary.txt"
+        echo "🔓 Public: $public | 🔒 Private: $private" >> "$MASTER_FOLDER/clone_summary.txt"
+        echo "========================================" >> "$MASTER_FOLDER/clone_summary.txt"
+        return 0
+    fi
+    
+    # Fresh clone - no existing repos
+    print_repo_summary "Cloning All Repositories" "${repos_array[@]}"
     clone_repos "${repos_array[@]}"
     
+    # Final summary for fresh clone
+    local cloned_repos=$(find "$MASTER_FOLDER" -maxdepth 1 -type d -name "*" | grep -v "^$MASTER_FOLDER$" | wc -l)
     echo ""
-    echo "🎉 All repositories cloned in: $(pwd)/$MASTER_FOLDER"
+    echo "🎉 All repositories cloned!"
+    echo "📁 Location: $(pwd)/$MASTER_FOLDER"
+    echo "📦 Cloned: $cloned_repos/$total repositories"
+    echo "🔓 Public: $public | 🔒 Private: $private"
+    
+    # Update summary file with final status
+    echo "" >> "$MASTER_FOLDER/clone_summary.txt"
+    echo "FINAL STATUS:" >> "$MASTER_FOLDER/clone_summary.txt"
+    echo "📦 Cloned: $cloned_repos/$total repositories" >> "$MASTER_FOLDER/clone_summary.txt"
+    echo "🔓 Public: $public | 🔒 Private: $private" >> "$MASTER_FOLDER/clone_summary.txt"
+    echo "========================================" >> "$MASTER_FOLDER/clone_summary.txt"
 }
 
 main "$@"
